@@ -1,0 +1,42 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Jan 25 15:43:59 2020
+
+@author: victo
+"""
+import pandas as pd
+from pandas_datareader.data import DataReader
+import pyfolio as pf
+import warnings
+warnings.filterwarnings('ignore')
+import requests
+
+def get_single_data(x,start,end):
+    data_source= 'yahoo'
+    data = DataReader(x,data_source,start,end)
+    close_data= data['Adj Close'] 
+    daily_returns= close_data.pct_change()
+    daily_returns=daily_returns.rename('Returns')
+    datap= {'Adj Close':close_data,'Returns':daily_returns}
+    second_column= pd.DataFrame(datap)
+    
+    def get_symbol(symbol):
+        url = "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query={}&region=1&lang=en".format(symbol)
+        result = requests.get(url).json()
+
+        for x in result['ResultSet']['Result']:
+            if x['symbol'] == symbol:
+                return x['name']
+
+    company = get_symbol(x)    
+    
+    print("Prices and Returns of",company," from ",start," to ", end)
+    
+    print(second_column)
+    
+    
+    pf.create_returns_tear_sheet(daily_returns, return_fig=True)
+    
+    return second_column
+
+test2 = get_single_data('^GSPC','2008-01-01','2020-01-25')
