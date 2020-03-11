@@ -1,0 +1,288 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Mar  9 12:52:29 2020
+
+@author: victo
+"""
+
+#import yfinance as yf
+import requests
+import json
+import pandas as pd
+from datetime import timedelta
+from pandas_datareader.data import DataReader
+import matplotlib.pyplot as plt
+from yahoo_fin import stock_info as si
+import datetime
+import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
+
+companies = [
+#
+'MMM','ABT','ABBV','ABMD','ACN','ATVI','ADBE','AMD','AAP','AES','AFL','A','APD','AKAM','ALK','ALB','ARE','ALXN','ALGN','ALLE','AGN','ADS','LNT','ALL','GOOGL','GOOG','MO','AMZN','AEE','AAL','AEP','AXP','AIG','T','AMT','AWK','AMP','ABC','AME','AMGN','APH','ADI','ANSS','ANTM','AON','AOS','APA','AIV','AAPL','AMAT','APTV','ADM','ARNC','ANET','AJG','AIZ','ATO','ADSK','ADP','AZO','AVB','AVY','BLL','BAC','BK','BAX','BDX','BBY','BIIB','BLK','BA','BKNG','BWA','BXP','BSX','BMY','AVGO','BR','CHRW','COG','CDNS','CPB','COF','CPRI','CAH','KMX','CCL','CAT','CBOE','CBRE','CDW','CE','CNC','CNP','CTL','CERN','CF','SCHW','CHTR','CVX','CMG','CB','CHD','CI','CINF','CTAS','CSCO','C','CFG','CTXS','CLX','CME','CMS','KO','CTSH','CL','CMCSA','CMA','CAG','CXO','COP','ED','STZ','COO','CPRT','GLW','COST','COTY','CCI','CSX','CMI','CVS','DHI','DHR','DRI','DVA','DAL','XRAY','DVN','FANG','DLR','DFS','DISCA','DISCK','DISH','DG','DLTR','D','DOV','DTE','DUK','DRE','DD','ETFC','EMN','ETN','EBAY','ECL','EIX','EW','EA','EMR','ETR','EOG','EFX','EQIX','EQR','ESS','EL','EVRG','ES','RE','EXC','EXPE','EXPD','EXR','XOM','FFIV','FB','FAST','FRT','FDX','FIS','FITB','FE','FISV','FLT','FLIR','FLS','FMC','F','FTNT','FTV','FBHS','BEN','FCX','GPS','GRMN','IT','GD','GE','GIS','GM','GPC','GILD','GL','GPN','GS','GWW','HRB','HAL','HBI','HOG','HIG','HAS','HCA','HP','HSIC','HSY','HES','HPE','HLT','HFC','HOLX','HD','HON','HRL','HST','HPQ','HUM','HBAN','HII','IDXX','INFO','ITW','ILMN','INCY','IR','INTC','ICE','IBM','IP','IPG','IFF','INTU','ISRG','IVZ','IPGP','IQV','IRM','JKHY','JBHT','SJM','JNJ','JCI','JPM','JNPR','KSU','K','KEY','KEYS','KMB','KIM','KMI','KLAC','KSS','KHC','KR','LB','LH','LRCX','LVS','LEG','LDOS','LEN','LLY','LNC','LIN','LYV','LKQ','LMT','L','LOW','LYB','MTB','M','MRO','MPC','MKTX','MAR','MMC','MLM','MAS','MA','MKC','MXIM','MCD','MCK','MDT','MRK','MET','MTD','MGM','MCHP','MU','MSFT','TAP','MDLZ','MNST','MCO','MS','MOS','MSI','MSCI','MYL','NDAQ','NOV','NTAP','NFLX','NWL','NEM','NWSA','NWS','NEE','NLSN','NKE','NI','NBL','JWN','NSC','NTRS','NOC','NCLH','NRG','NUE','NVDA','NVR','ORLY','OXY','ODFL','OMC','OKE','ORCL','PCAR','PKG','PH','PAYX','PAYC','PYPL','PNR','PBCT','PEP','PKI','PRGO','PFE','PM','PSX','PNW','PXD','PNC','PPG','PPL','PFG','PG','PGR','PLD','PRU','PEG','PSA','PHM','PVH','QRVO','PWR','QCOM','DGX','RL','RJF','RTN','O','REG','REGN','RF','RSG','RMD','RHI','ROK','ROL','ROP','ROST','RCL','SPGI','CRM','SBAC','SLB','STX','SEE','SRE','NOW','SHW','SPG','SWKS','SLG','SNA','SO','LUV','SBUX','STT','STE','SYK','SIVB','SYF','SNPS','SYY','TMUS','TROW','TTWO','TPR','TGT','TEL','FTI','TFX','TXN','TXT','TMO','TIF','TJX','TDG','TRV','TWTR','TSN','UDR','ULTA','USB','UAA','UA','UNP','UAL','UNH','UPS','URI','UTX','UHS','UNM','VFC','VLO','VAR','VTR','VRSN','VRSK','VZ','VRTX','V','VNO','VMC','WRB','WAB','WMT','WBA','DIS','WM','WAT','WEC','WFC','WELL','WDC','WU','WRK','WY','WHR','WMB','WLTW','WYNN','XEL','XRX','XLNX','XYL','YUM','ZBRA','ZBH','ZION'
+,'ZTS'
+# new stock 2019 ,'DOW','FOXA','LHX'
+]
+
+#year of consulting
+year_end= 2016
+
+#momentum dates (backtesting)
+end= datetime.date(2017,3,31)
+start= end - timedelta(days=180)
+
+#how many companies have you invested on?
+numb_=50
+
+
+print("This model helps to achieve a good return in the S&P500 for the year ending in", end+timedelta(days=365))
+print("Ratios calculated from ",year_end)
+print("Momentum calculated from ",start, " to ", end)
+
+#create our list
+pers_param={}
+price={}
+first_parameter={}
+second_parameter={}
+third_parameter={}
+
+def get_income_statement(company):
+    resp = requests.get(f"https://financialmodelingprep.com/api/v3/financials/income-statement/{company}")
+    resp = resp.json()
+    file = open(f"income-statement-{company}.txt", "w")
+    json.dump(resp, file, indent=2)
+    data = resp
+    income_statement = {}
+    for ent in data["financials"]:
+        y = int(ent["date"][0:4])
+        #print(dates)
+        if y == year_end:
+            income_statement[company] = {
+                "ebit": float(ent["EBIT"]),
+                "net_inc": float(ent["Net Income"]),
+                }
+        if income_statement == {company: {'ebit': 0.0, 'net_inc': 0.0}} or income_statement=={}:
+            if y == year_end-1:
+                income_statement[company] = {
+                    "ebit": float(ent["EBIT"]),
+                    "net_inc": float(ent["Net Income"]),
+                    }
+    file.close()
+    return income_statement
+
+
+
+def get_balance_sheet(company):
+    resp = requests.get(f"https://financialmodelingprep.com/api/v3/financials/balance-sheet-statement/{company}")
+    resp = resp.json()
+    file = open(f"balance-sheet-{company}.txt", "w")
+    json.dump(resp, file, indent=2)
+    data = resp
+    balance_sheet = {}
+    for ent in data["financials"]:
+        y = int(ent["date"][0:4])
+        if y == year_end:
+            balance_sheet[company] = {
+                "capital": float(ent["Total assets"]),
+            }
+        if balance_sheet == {company: {'capital': 0.0}} or balance_sheet=={}:
+            if y == year_end-1:
+                balance_sheet[company] = {
+                    "capital": float(ent["Total assets"]),
+                    }
+    file.close()
+    return balance_sheet
+
+
+def get_enter_value(company):
+    resp = requests.get(f"https://financialmodelingprep.com/api/v3/enterprise-value/{company}")
+    resp = resp.json()
+    file = open(f"enterprise-value-{company}.txt", "w")
+    json.dump(resp, file, indent=2)
+    enter_value={}
+    for ent in resp["enterpriseValues"]:
+        y = int(ent["date"][0:4])
+        if y == year_end:
+           enter_value[company] = {
+              "enter-value": float(ent["Enterprise Value"]),
+               }
+        if enter_value == {company: {'enter-value': 0.0}} or enter_value=={}:
+            if y == year_end-1:
+                enter_value[company] = {
+                    "enter-value": float(ent["Enterprise Value"]),
+                    }
+    file.close()
+    return enter_value
+
+
+def get_momentum(x):
+    data_source= 'yahoo'
+    data = DataReader(x,data_source,start,end)
+    close_data= data['Adj Close'] 
+    daily_returns= close_data.pct_change()
+    daily_returns=daily_returns.rename('Returns')
+    daily_returns.plot()
+    
+    momentum = ((close_data[-1]/close_data[0])-1)
+    
+    return momentum
+
+
+def get_symbol(symbol):
+    url = "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query={}&region=1&lang=en".format(symbol)
+    result = requests.get(url).json()
+    
+    for x in result['ResultSet']['Result']:
+        if x['symbol'] == symbol:
+            return x['name']
+
+
+#loop
+for company in companies:
+    data= {}
+    a= pd.DataFrame(get_income_statement(company))
+    b= pd.DataFrame(get_balance_sheet(company))
+    c= pd.DataFrame(get_enter_value(company))
+    
+    #name of the company
+    name = get_symbol(company)
+    
+    #calculate the first parameter: EBIT / Enter_Value
+    
+    earn_yld= a.loc['ebit'] / c.loc['enter-value']
+    first_parameter[company] = earn_yld.tolist()
+    
+    #calculate the second parameter: Net_inc / Capital 
+    
+    roc = a.loc['net_inc']/b.loc['capital']
+    second_parameter[company] = roc.tolist()
+    
+    #calculate the third paramter: momentum
+    moment = get_momentum(company)
+    third_parameter[company]=moment
+    
+    #calculate new parameter and fill the list
+    pers_param[company] = str(((((earn_yld+ roc + moment)/3))).tolist())[1:-1]
+    
+    #add price of the stock
+    price[company] = str(round(si.get_live_price(company).tolist(),2))
+    
+pers_param= pd.DataFrame.from_dict(pers_param, orient = 'index')
+price= pd.DataFrame.from_dict(price, orient = 'index')
+first_parameter=pd.DataFrame.from_dict(first_parameter, orient = 'index')
+second_parameter=pd.DataFrame.from_dict(second_parameter, orient = 'index')
+third_parameter=pd.DataFrame.from_dict(third_parameter, orient = 'index')
+
+#order the list by ascending order
+df=[pers_param,price,first_parameter,second_parameter,third_parameter]
+df=pd.concat(df,axis=1).reindex(pers_param.index)
+df.columns =['Parameter','Current Price','Earnings Yield','ROC','Momentum']
+df=df.sort_values(by=['Parameter'], ascending=False)
+
+#Backtesting starts here
+
+#choosing top X companies that we bought
+backtest= df[0:numb_]
+list_tickers= list(backtest.index.values)
+
+#set parameters of the period to backtest
+back_start= end
+back_end= end + timedelta(days=365)
+backt={}
+ret_={}
+fin_ret={}
+
+def get_returns(company):
+    data_source= 'yahoo'
+    data = DataReader(company,data_source,back_start,back_end)
+    close_data= data['Adj Close'] 
+    daily_returns= close_data.pct_change().dropna()
+    daily_returns=daily_returns.rename('Returns')
+    return daily_returns
+
+def get_final_return(company):
+    data_source= 'yahoo'
+    data = DataReader(company,data_source,back_start,back_end)
+    close_data= data['Adj Close'] 
+    daily_returns= close_data.pct_change()
+    daily_returns=daily_returns.rename('Returns')
+    final_return = ((close_data[-1]/close_data[0])-1)
+    return final_return
+
+#new loop
+for company in list_tickers:
+    ret_[company]= get_returns(company)
+
+ret_= pd.DataFrame.from_dict(ret_, orient = 'index')
+ret2= ret_.T.dropna()
+ret2['portfolio_return'] = ret2.sum(axis=1) /numb_
+
+
+
+#get sp500 performance for same period of backtest
+data_source= 'yahoo'
+data = DataReader('^GSPC',data_source,back_start,back_end)
+close_data_sp= data['Adj Close'] 
+daily_returns_sp= close_data_sp.pct_change()
+daily_returns_sp=daily_returns_sp.rename('Returns')
+final_return_sp = ((close_data_sp[-1]/close_data_sp[0])-1)
+sp_annual_mean= daily_returns_sp.mean() *252
+sp_annual_sigma= daily_returns_sp.std() * (252**0.5)
+
+
+plotr={}
+ret2['SP500']=daily_returns_sp
+plotr['portfolio_return']=ret2['portfolio_return']
+plotr['SP500']=ret2['SP500']
+plotr= pd.DataFrame.from_dict(plotr, orient = 'index')
+plotr= plotr.T.dropna()
+plotr.plot()
+plt.legend()
+plt.xlabel('Daily Returns')
+plt.title('Performance of the portfolio against Index')
+plt.show()
+
+#annual mean and sigma
+mean= ret2['portfolio_return'].mean()*252
+sigma= ret2['portfolio_return'].std() * (252**0.5)
+
+#get data of risk free rate
+y10= DataReader('^TNX',data_source,back_start,back_end)
+close_data_y10= y10['Adj Close'] 
+annual_y10= close_data_y10.mean()/100
+
+#calculate sharpe ratio of the portfolio and index
+port_sharpe_ratio = (mean - annual_y10 ) / sigma
+sp_sharpe = (sp_annual_mean - annual_y10) / sp_annual_sigma
+
+#create normal distribution of portfolio
+s = np.random.normal(mean, sigma, 1000)
+# Create the bins and histogram
+count, bins, ignored = plt.hist(s, 20, normed=True)
+# Plot the distribution curve
+plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) *
+    np.exp( - (bins - mean)**2 / (2 * sigma**2) ), linewidth=3, color='y')
+plt.title('Normal distribution of the portfolio return for a year')
+plt.ylabel('probability')
+plt.xlabel('Annual Returns')
+plt.show()
+
+
+#calculate individual return of each stock
+for company in list_tickers:
+    fin_ret[company] = get_final_return(company)
+
+fin_ret = pd.DataFrame.from_dict(fin_ret, orient = 'index')
+fin_ret.columns = ['Final Return']
+final_mean = fin_ret['Final Return'].mean()
+
+#print final return of the model vs index
+print("The final return of this model was ", final_mean," meanwhile for the S&P500 was ",final_return_sp)
+
+#print means and sigmas of the portfolio vs index
+print("Annual mean of the portfolio was ",mean, "vs the Index's of ",sp_annual_mean)
+print("Annual sigma of the portfolio was ",sigma, "vs the Index's of ",sp_annual_sigma)
+
+#print sharpe ratio of the portfolio vs index
+print("The portfolio Sharpe ratio is ", port_sharpe_ratio, "vs the Index's of ", sp_sharpe)
