@@ -25,16 +25,15 @@ companies = [
 # new stock 2019 ,'DOW','FOXA','LHX'
 ]
 
-#year of consulting
-year_end= 2016
+#last year ended
+year_end= 2019
 
-#momentum dates (backtesting)
-end= datetime.date(2017,3,31)
+#momentum dates
+end= date.today()
 start= end - timedelta(days=180)
 
-#how many companies have you invested on?
+#how many companies do you want to evaluate to invest on?
 numb_=50
-
 
 print("This model helps to achieve a good return in the S&P500 for the year ending in", end+timedelta(days=365))
 print("Ratios calculated from ",year_end)
@@ -179,110 +178,4 @@ df=[pers_param,price,first_parameter,second_parameter,third_parameter]
 df=pd.concat(df,axis=1).reindex(pers_param.index)
 df.columns =['Parameter','Current Price','Earnings Yield','ROC','Momentum']
 df=df.sort_values(by=['Parameter'], ascending=False)
-
-#Backtesting starts here
-
-#choosing top X companies that we bought
-backtest= df[0:numb_]
-list_tickers= list(backtest.index.values)
-
-#set parameters of the period to backtest
-back_start= end
-back_end= end + timedelta(days=365)
-backt={}
-ret_={}
-fin_ret={}
-
-def get_returns(company):
-    data_source= 'yahoo'
-    data = DataReader(company,data_source,back_start,back_end)
-    close_data= data['Adj Close'] 
-    daily_returns= close_data.pct_change().dropna()
-    daily_returns=daily_returns.rename('Returns')
-    return daily_returns
-
-def get_final_return(company):
-    data_source= 'yahoo'
-    data = DataReader(company,data_source,back_start,back_end)
-    close_data= data['Adj Close'] 
-    daily_returns= close_data.pct_change()
-    daily_returns=daily_returns.rename('Returns')
-    final_return = ((close_data[-1]/close_data[0])-1)
-    return final_return
-
-#new loop
-for company in list_tickers:
-    ret_[company]= get_returns(company)
-
-ret_= pd.DataFrame.from_dict(ret_, orient = 'index')
-ret2= ret_.T.dropna()
-ret2['portfolio_return'] = ret2.sum(axis=1) /numb_
-
-
-
-#get sp500 performance for same period of backtest
-data_source= 'yahoo'
-data = DataReader('^GSPC',data_source,back_start,back_end)
-close_data_sp= data['Adj Close'] 
-daily_returns_sp= close_data_sp.pct_change()
-daily_returns_sp=daily_returns_sp.rename('Returns')
-final_return_sp = ((close_data_sp[-1]/close_data_sp[0])-1)
-sp_annual_mean= daily_returns_sp.mean() *252
-sp_annual_sigma= daily_returns_sp.std() * (252**0.5)
-
-
-plotr={}
-ret2['SP500']=daily_returns_sp
-plotr['portfolio_return']=ret2['portfolio_return']
-plotr['SP500']=ret2['SP500']
-plotr= pd.DataFrame.from_dict(plotr, orient = 'index')
-plotr= plotr.T.dropna()
-plotr.plot()
-plt.legend()
-plt.xlabel('Daily Returns')
-plt.title('Performance of the portfolio against Index')
-plt.show()
-
-#annual mean and sigma
-mean= ret2['portfolio_return'].mean()*252
-sigma= ret2['portfolio_return'].std() * (252**0.5)
-
-#get data of risk free rate
-y10= DataReader('^TNX',data_source,back_start,back_end)
-close_data_y10= y10['Adj Close'] 
-annual_y10= close_data_y10.mean()/100
-
-#calculate sharpe ratio of the portfolio and index
-port_sharpe_ratio = (mean - annual_y10 ) / sigma
-sp_sharpe = (sp_annual_mean - annual_y10) / sp_annual_sigma
-
-#create normal distribution of portfolio
-s = np.random.normal(mean, sigma, 1000)
-# Create the bins and histogram
-count, bins, ignored = plt.hist(s, 20, normed=True)
-# Plot the distribution curve
-plt.plot(bins, 1/(sigma * np.sqrt(2 * np.pi)) *
-    np.exp( - (bins - mean)**2 / (2 * sigma**2) ), linewidth=3, color='y')
-plt.title('Normal distribution of the portfolio return for a year')
-plt.ylabel('probability')
-plt.xlabel('Annual Returns')
-plt.show()
-
-
-#calculate individual return of each stock
-for company in list_tickers:
-    fin_ret[company] = get_final_return(company)
-
-fin_ret = pd.DataFrame.from_dict(fin_ret, orient = 'index')
-fin_ret.columns = ['Final Return']
-final_mean = fin_ret['Final Return'].mean()
-
-#print final return of the model vs index
-print("The final return of this model was ", final_mean," meanwhile for the S&P500 was ",final_return_sp)
-
-#print means and sigmas of the portfolio vs index
-print("Annual mean of the portfolio was ",mean, "vs the Index's of ",sp_annual_mean)
-print("Annual sigma of the portfolio was ",sigma, "vs the Index's of ",sp_annual_sigma)
-
-#print sharpe ratio of the portfolio vs index
-print("The portfolio Sharpe ratio is ", port_sharpe_ratio, "vs the Index's of ", sp_sharpe)
+print(df)
